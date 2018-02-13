@@ -35,12 +35,10 @@ Resources:
 
 Outputs:
   SslKey:
-    Value:
-      Ref: SslKey
+    Value: !Ref SslKey
     Export:
       Name: Kolide-SslKey
   RdsKey:
-    Value:
-      Ref: RdsKey
+    Value: !Ref RdsKey
     Export:
       Name: Kolide-RdsKey

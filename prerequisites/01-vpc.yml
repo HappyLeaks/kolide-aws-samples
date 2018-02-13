@@ -14,8 +14,7 @@ Resources:
   InternetGatewayAttachement:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId:
-        Ref: InternetGateway
+      InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
   NatEIP:
     Type: AWS::EC2::EIP
@@ -24,13 +23,11 @@ Resources:
       Domain: vpc
 Outputs:
   VPC:
-    Value:
-      Ref: VPC
+    Value: !Ref VPC
     Export:
       Name: Kolide-VPC
   VPCIntenetGateway:
-    Value:
-      Ref: InternetGateway
+    Value: !Ref InternetGateway
     Export:
       Name: Kolide-InternetGateway
   NatEIP:

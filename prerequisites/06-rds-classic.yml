@@ -17,10 +17,7 @@ Resources:
       MultiAZ: false
       BackupRetentionPeriod: '30'
       VPCSecurityGroups:
-        - Fn::Sub:
-          - ${SecurityGroups}
-          - SecurityGroups:
-              Fn::ImportValue: Kolide-MySql-SecurityGroup
+        - Fn::ImportValue: Kolide-MySql-SecurityGroup
       KmsKeyId:
         Fn::ImportValue: Kolide-RdsKey
       StorageEncrypted: 'true'
@@ -34,14 +31,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Kolide RDS Subnet Group
       SubnetIds:
-        - Fn::Sub:
-          - ${Subnet}
-          - Subnet:
-              Fn::ImportValue: Kolide-SubnetAZ0
-        - Fn::Sub:
-          - ${Subnet}
-          - Subnet:
-              Fn::ImportValue: Kolide-SubnetAZ1
+        - Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::ImportValue: Kolide-SubnetAZ1
 Outputs:
   RdsDBName:
     Value: !Ref Rds

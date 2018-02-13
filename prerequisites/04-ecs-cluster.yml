@@ -8,7 +8,6 @@ Resources:
       ClusterName: !Ref AWS::StackName
 Outputs:
   ECSCluster:
-    Value:
-      Ref: ECSCluster
+    Value: !Ref ECSCluster
     Export:
       Name: Kolide-ECSCluster

@@ -60,24 +60,18 @@ Resources:
   RouteTableAssociationAZ0:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: NatRouteTable
-      SubnetId:
-        Ref: SubnetAZ0
+      RouteTableId: !Ref NatRouteTable
+      SubnetId: !Ref SubnetAZ0
   RouteTableAssociationAZ1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: NatRouteTable
-      SubnetId:
-        Ref: SubnetAZ1
+      RouteTableId: !Ref NatRouteTable
+      SubnetId: !Ref SubnetAZ1
   NatRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId:
-        Ref: NatRouteTable
-      SubnetId:
-        Ref: SubnetNat
+      RouteTableId: !Ref NatRouteTable
+      SubnetId: !Ref SubnetNat
   NatGateway:
     Type: AWS::EC2::NatGateway
     Properties:
@@ -99,12 +93,10 @@ Resources:
         Fn::ImportValue: Kolide-InternetGateway
 Outputs:
   SubnetAZ0:
-    Value:
-      Ref: SubnetAZ0
+    Value: !Ref SubnetAZ0
     Export:
       Name: Kolide-SubnetAZ0
   SubnetAZ1:
-    Value:
-      Ref: SubnetAZ1
+    Value: !Ref SubnetAZ1
     Export:
       Name: Kolide-SubnetAZ1

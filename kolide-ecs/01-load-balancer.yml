@@ -15,7 +15,6 @@ Resources:
         Value: !Sub ${AWS::StackName}
 Outputs:
   ECSCluster:
-    Value:
-      Ref: NetworkLoadBalancer
+    Value: !Ref NetworkLoadBalancer
     Export:
       Name: Kolide-NetworkLoadBalancer

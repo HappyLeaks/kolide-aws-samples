@@ -32,14 +32,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Kolide RDS Subnet Group
       SubnetIds:
-        - Fn::Sub:
-          - ${Subnet}
-          - Subnet:
-              Fn::ImportValue: Kolide-SubnetAZ0
-        - Fn::Sub:
-          - ${Subnet}
-          - Subnet:
-              Fn::ImportValue: Kolide-SubnetAZ1
+        - Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::ImportValue: Kolide-SubnetAZ1
 Outputs:
   AuroraDBName:
     Value: !Ref KolideAuroraDB

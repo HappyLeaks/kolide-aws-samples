@@ -8,7 +8,6 @@ Resources:
       RepositoryName: kolide-aws-quickstart
 Outputs:
   ECRRepo:
-    Value:
-      Ref: ECRRepo
+    Value: !Ref ECRRepo
     Export:
       Name: Kolide-ECRRepo

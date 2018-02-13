@@ -37,17 +37,14 @@ Resources:
         ToPort: 8080
 Outputs:
   RedisSecurityGroup:
-    Value:
-      Ref: RedisSecurityGroup
+    Value: !Ref RedisSecurityGroup
     Export:
       Name: Kolide-Redis-SecurityGroup
   KolideSecurityGroup:
-    Value:
-      Ref: KolideSecurityGroup
+    Value: !Ref KolideSecurityGroup
     Export:
       Name: Kolide-ECS-SecurityGroup
   MySqlSecurityGroup:
-    Value:
-      Ref: MySqlSecurityGroup
+    Value: !Ref MySqlSecurityGroup
     Export:
       Name: Kolide-MySql-SecurityGroup
