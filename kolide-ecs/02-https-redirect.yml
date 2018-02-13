@@ -1,0 +1,125 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defines a sample HTTPS Redirection micro-service for Kolide AWS Quickstart
+
+Resources:
+  HTTPSRedirectTask:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: https-redirect
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 256
+      Memory: 0.5GB
+      ContainerDefinitions:
+      - Name: https-redirect
+        Image: hope/redirect-http-to-https
+        MemoryReservation: 256
+        PortMappings:
+        - ContainerPort: 80
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref AWS::StackName
+            awslogs-region: !Ref AWS::Region
+            awslogs-stream-prefix: https-redirect
+      ExecutionRoleArn: !Ref HTTPSRedirectTaskRole
+      TaskRoleArn: !Ref HTTPSRedirectTaskRole
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 365
+
+  HTTPSRedirectService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Fn::ImportValue: Kolide-ECSCluster
+      DesiredCount: 1
+      TaskDefinition: !Ref HTTPSRedirectTask
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+          - !Ref HTTPSRedirectSecurityGroup
+          Subnets:
+          - Fn::Sub:
+            - ${Subnet}
+            - Subnet:
+                Fn::ImportValue: Kolide-SubnetAZ0
+          - Fn::Sub:
+            - ${Subnet}
+            - Subnet:
+                Fn::ImportValue: Kolide-SubnetAZ1
+      LoadBalancers:
+      - ContainerName: https-redirect
+        ContainerPort: 80
+        TargetGroupArn: !Ref HTTPSRedirectionTargetGroup
+
+  HTTPSRedirectLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Fn::ImportValue: Kolide-NetworkLoadBalancer
+      Port: 80
+      Protocol: TCP
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref HTTPSRedirectionTargetGroup
+
+  HTTPSRedirectionTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Port: 80
+      Protocol: TCP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: TCP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+
+  HTTPSRedirectSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      GroupDescription: Allow access to HTTPSRedirect from anywhere
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+
+  HTTPSRedirectTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action:
+          - "sts:AssumeRole"
+      Policies:
+      - PolicyName: !Sub ${AWS::StackName}-HTTPSRedirectTaskPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:Create*
+            - logs:Put*
+            Resource: '*'
+Outputs:
+  KolideNLB:
+    Value:
+      Ref: HTTPSRedirectionTargetGroup
+    Export:
+      Name: Kolide-HTTPSRedirectionTargetGroup

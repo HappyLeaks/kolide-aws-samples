@@ -1,0 +1,14 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defines a sample ECS Cluster for Kolide AWS Quickstart
+Resources:
+  ECSCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: !Ref AWS::StackName
+Outputs:
+  ECSCluster:
+    Value:
+      Ref: ECSCluster
+    Export:
+      Name: Kolide-ECSCluster

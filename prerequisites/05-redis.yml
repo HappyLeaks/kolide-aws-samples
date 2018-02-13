@@ -1,0 +1,45 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple Redis ElastiCache template to help you get started quickly.
+Resources:
+  Redis:
+    Type: AWS::ElastiCache::ReplicationGroup
+    Properties:
+      AutomaticFailoverEnabled: 'false'
+      AutoMinorVersionUpgrade: true
+      CacheNodeType: cache.t2.micro
+      Engine: redis
+      EngineVersion: 3.2.4
+      NumCacheClusters: 1
+      PreferredMaintenanceWindow: sun:22:00-sun:23:30
+      ReplicationGroupDescription: !Sub 'ReplicationGroup for ${AWS::StackName}'
+      SecurityGroupIds:
+        - Fn::Sub:
+          - ${SecurityGroups}
+          - SecurityGroups:
+              Fn::ImportValue: Kolide-Redis-SecurityGroup
+      CacheSubnetGroupName:
+        Ref: RedisSubnetGroup
+      Tags:
+      - Key: Name
+        Value: !Ref AWS::StackName
+
+  RedisSubnetGroup:
+    Type: AWS::ElastiCache::SubnetGroup
+    Properties:
+      Description: Redis Cache Subnet Group
+      SubnetIds:
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ1
+
+Outputs:
+  ECRRedis:
+    Value: !GetAtt Redis.PrimaryEndPoint.Address
+    Export:
+      Name: Kolide-RedisEndpoint

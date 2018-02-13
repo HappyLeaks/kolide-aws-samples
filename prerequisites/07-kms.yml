@@ -1,0 +1,46 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple KMS template to help you get started quickly.
+Resources:
+  SslKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS Key used for protecting Kolide Fleet's SSL private key
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: !Sub ${AWS::StackName}-SslKey
+        Statement:
+        - Sid: Enable IAM User Permissions
+          Effect: Allow
+          Principal:
+            AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+          Action: kms:*
+          Resource: "*"
+  RdsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: KMS Key used for encrypting the RDS Database
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Id: !Sub ${AWS::StackName}-RdsKey
+        Statement:
+        - Sid: Enable IAM User Permissions
+          Effect: Allow
+          Principal:
+            AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+          Action: kms:*
+          Resource: "*"
+
+Outputs:
+  SslKey:
+    Value:
+      Ref: SslKey
+    Export:
+      Name: Kolide-SslKey
+  RdsKey:
+    Value:
+      Ref: RdsKey
+    Export:
+      Name: Kolide-RdsKey

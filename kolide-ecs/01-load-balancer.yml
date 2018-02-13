@@ -1,0 +1,21 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defines a sample Network Load Balancer for Kolide AWS Quickstart
+Resources:
+  NetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: network
+      Scheme: internet-facing
+      Subnets:
+        - Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::ImportValue: Kolide-SubnetAZ1
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}
+Outputs:
+  ECSCluster:
+    Value:
+      Ref: NetworkLoadBalancer
+    Export:
+      Name: Kolide-NetworkLoadBalancer

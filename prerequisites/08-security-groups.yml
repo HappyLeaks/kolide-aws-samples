@@ -1,0 +1,53 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Some security group templates to help you get started quickly.
+Resources:
+  RedisSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      GroupDescription: Allow access to the cache only from Kolide
+      SecurityGroupIngress:
+      - SourceSecurityGroupId: !Ref KolideSecurityGroup
+        IpProtocol: tcp
+        FromPort: 6379
+        ToPort: 6379
+  MySqlSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      GroupDescription: Allow access to MySQL only from Kolide
+      SecurityGroupIngress:
+      - SourceSecurityGroupId: !Ref KolideSecurityGroup
+        IpProtocol: tcp
+        FromPort: 3306
+        ToPort: 3306
+  KolideSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      GroupDescription: Allow access to Kolide from anywhere
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        IpProtocol: tcp
+        FromPort: 8080
+        ToPort: 8080
+Outputs:
+  RedisSecurityGroup:
+    Value:
+      Ref: RedisSecurityGroup
+    Export:
+      Name: Kolide-Redis-SecurityGroup
+  KolideSecurityGroup:
+    Value:
+      Ref: KolideSecurityGroup
+    Export:
+      Name: Kolide-ECS-SecurityGroup
+  MySqlSecurityGroup:
+    Value:
+      Ref: MySqlSecurityGroup
+    Export:
+      Name: Kolide-MySql-SecurityGroup

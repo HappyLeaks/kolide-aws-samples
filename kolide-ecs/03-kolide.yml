@@ -1,0 +1,179 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple Kolide Fleet template to help you get started quickly.
+Parameters:
+  KolideAuthJwtKey:
+    Type: String
+    NoEcho: true
+  KolideMySqlPassword:
+    Type: String
+    NoEcho: true
+  KolideACMCertArn:
+    Type: String
+  KolideSSMPrivKeyParam:
+    Type: String
+
+Resources:
+  KolideTask:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: kolide-fargate
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: 512
+      Memory: 1GB
+      ContainerDefinitions:
+      - Name: kolide
+        Image:
+          Fn::Join:
+            - ''
+            - - !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/'
+              - Fn::ImportValue: Kolide-ECRRepo
+        MemoryReservation: 256
+        PortMappings:
+        - ContainerPort: 8080
+        Environment:
+        - Name: KOLIDE_AUTH_JWT_KEY
+          Value: !Ref KolideAuthJwtKey
+        - Name: KOLIDE_MYSQL_ADDRESS
+          Value:
+            Fn::Sub:
+              - '${EndPoint}:3306'
+              - EndPoint:
+                  Fn::ImportValue: Kolide-AuroraClusterEndPoint
+        - Name: KOLIDE_MYSQL_DATABASE
+          Value: kolide
+        - Name: KOLIDE_MYSQL_PASSWORD
+          Value: !Ref KolideMySqlPassword
+        - Name: KOLIDE_MYSQL_USERNAME
+          Value: kolide
+        - Name: KOLIDE_SERVER_TLS
+          Value: true
+        - Name: KOLIDE_CERTIFICATE_ARN
+          Value: !Ref KolideACMCertArn
+        - Name: KOLIDE_SSL_PRIVKEY_SSM_PARAM
+          Value: !Ref KolideSSMPrivKeyParam
+        - Name: KOLIDE_REDIS_ADDRESS
+          Value:
+            Fn::Sub:
+              - '${EndPoint}:6379'
+              - EndPoint:
+                  Fn::ImportValue: Kolide-RedisEndpoint
+        LogConfiguration:
+          LogDriver: awslogs
+          Options:
+            awslogs-group: !Ref AWS::StackName
+            awslogs-region: !Ref AWS::Region
+            awslogs-stream-prefix: kolide-fleet
+      ExecutionRoleArn: !Ref KolideFargateTaskRole
+      TaskRoleArn: !Ref KolideFargateTaskRole
+
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 365
+
+  KolideService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Fn::ImportValue: Kolide-ECSCluster
+      DesiredCount: 1
+      TaskDefinition: !Ref KolideTask
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+          - Fn::ImportValue: Kolide-ECS-SecurityGroup
+          Subnets:
+          - Fn::ImportValue: Kolide-SubnetAZ0
+          - Fn::ImportValue: Kolide-SubnetAZ1
+      LoadBalancers:
+      - ContainerName: kolide
+        ContainerPort: 8080
+        TargetGroupArn: !Ref KolideTargetGroup
+    DependsOn: KolideLoadBalancerListener
+
+  KolideTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Port: 8080
+      Protocol: TCP
+      TargetType: ip
+      HealthCheckIntervalSeconds: 30
+      HealthCheckProtocol: TCP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+
+  KolideLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Fn::ImportValue: Kolide-NetworkLoadBalancer
+      Port: 443
+      Protocol: TCP
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref KolideTargetGroup
+    DependsOn: KolideTargetGroup
+
+  KolideFargateTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+          Action:
+          - "sts:AssumeRole"
+      Policies:
+      - PolicyName: !Sub ${AWS::StackName}-KolideTaskPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - kms:Describe*
+            - kms:Decrypt
+            Resource:
+              - Fn::Sub:
+                - arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${KMSKey}
+                - KMSKey:
+                    Fn::ImportValue: Kolide-SslKey
+          - Effect: Allow
+            Action:
+            - ssm:GetParameters
+            Resource:
+            - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${KolideSSMPrivKeyParam}'
+          - Effect: Allow
+            Action:
+            - acm:GetCertificate
+            Resource: !Ref KolideACMCertArn
+          - Effect: Allow
+            Action:
+            - kms:ListKeys
+            - kms:ListAliases
+            Resource: "*"
+          - Effect: Allow
+            Action:
+            - ecr:GetAuthorizationToken
+            - ecr:BatchCheckLayerAvailability
+            - ecr:GetDownloadUrlForLayer
+            - ecr:BatchGetImage
+            - logs:Create*
+            - logs:Put*
+            - ecs:DeregisterContainerInstance
+            - ecs:DiscoverPollEndpoint
+            - ecs:Poll
+            - ecs:RegisterContainerInstance
+            - ecs:StartTelemetrySession
+            - ecs:UpdateContainerInstancesState
+            - ecs:Submit*
+            Resource: '*'

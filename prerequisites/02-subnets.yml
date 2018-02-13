@@ -1,0 +1,110 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defines the sample subnets required for Kolide AWS Quickstart
+Resources:
+  SubnetAZ0:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone:
+        Fn::Select:
+        - '0'
+        - Fn::GetAZs: ''
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Tags:
+      - Key: Name
+        Value: Kolide-SubnetAZ0
+  SubnetAZ1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone:
+        Fn::Select:
+        - '1'
+        - Fn::GetAZs: ''
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Tags:
+      - Key: Name
+        Value: Kolide-SubnetAZ1
+  SubnetNat:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone:
+        Fn::Select:
+        - '0'
+        - Fn::GetAZs: ''
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Tags:
+      - Key: Name
+        Value: Kolide-SubnetNat
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Tags:
+      - Key: Name
+        Value: Kolide-RouteTable
+  NatRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Fn::ImportValue: Kolide-VPC
+      Tags:
+      - Key: Name
+        Value: Kolide-NatRouteTable
+  RouteTableAssociationAZ0:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: NatRouteTable
+      SubnetId:
+        Ref: SubnetAZ0
+  RouteTableAssociationAZ1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: NatRouteTable
+      SubnetId:
+        Ref: SubnetAZ1
+  NatRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: NatRouteTable
+      SubnetId:
+        Ref: SubnetNat
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref SubnetNat
+      AllocationId:
+        Fn::ImportValue: Kolide-NatEIP-AllocationId
+  SubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+  NatSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NatRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Fn::ImportValue: Kolide-InternetGateway
+Outputs:
+  SubnetAZ0:
+    Value:
+      Ref: SubnetAZ0
+    Export:
+      Name: Kolide-SubnetAZ0
+  SubnetAZ1:
+    Value:
+      Ref: SubnetAZ1
+    Export:
+      Name: Kolide-SubnetAZ1

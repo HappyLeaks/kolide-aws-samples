@@ -1,0 +1,53 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple RDS template to help you get started quickly.
+Parameters:
+  MasterUserPassword:
+    Type: String
+    NoEcho: true
+Resources:
+  Rds:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Snapshot
+    Properties:
+      Engine: mysql
+      DBName: kolide
+      EngineVersion: 5.7
+      AutoMinorVersionUpgrade: 'true'
+      MultiAZ: false
+      BackupRetentionPeriod: '30'
+      VPCSecurityGroups:
+        - Fn::Sub:
+          - ${SecurityGroups}
+          - SecurityGroups:
+              Fn::ImportValue: Kolide-MySql-SecurityGroup
+      KmsKeyId:
+        Fn::ImportValue: Kolide-RdsKey
+      StorageEncrypted: 'true'
+      AllocatedStorage: 30
+      DBInstanceClass: db.t2.small
+      MasterUsername: kolide
+      MasterUserPassword: !Ref MasterUserPassword
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Kolide RDS Subnet Group
+      SubnetIds:
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ1
+Outputs:
+  RdsDBName:
+    Value: !Ref Rds
+    Export:
+      Name: Kolide-RdsDBName
+  RdsEndPoint:
+    Value: !GetAtt Rds.Endpoint.Address
+    Export:
+      Name: Kolide-RdsEndPoint

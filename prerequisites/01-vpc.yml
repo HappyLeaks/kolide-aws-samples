@@ -1,0 +1,39 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Defines a sample VPC for Kolide AWS Quickstart
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+  InternetGatewayAttachement:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId: !Ref VPC
+  NatEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachement
+    Properties:
+      Domain: vpc
+Outputs:
+  VPC:
+    Value:
+      Ref: VPC
+    Export:
+      Name: Kolide-VPC
+  VPCIntenetGateway:
+    Value:
+      Ref: InternetGateway
+    Export:
+      Name: Kolide-InternetGateway
+  NatEIP:
+    Value: !GetAtt NatEIP.AllocationId
+    Export:
+      Name: Kolide-NatEIP-AllocationId

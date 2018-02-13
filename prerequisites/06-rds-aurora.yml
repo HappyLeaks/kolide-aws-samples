@@ -1,0 +1,55 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: A simple Aurora template to help you get started quickly.
+Parameters:
+  MasterUserPassword:
+    Type: String
+    NoEcho: true
+Resources:
+  KolideRDSCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-mysql
+      DatabaseName: kolide
+      MasterUsername: kolide
+      MasterUserPassword: !Ref MasterUserPassword
+      BackupRetentionPeriod: 30
+      PreferredBackupWindow: 01:00-02:00
+      PreferredMaintenanceWindow: mon:03:00-mon:04:00
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+      DBClusterParameterGroupName: default.aurora-mysql5.7
+  KolideAuroraDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: aurora-mysql
+      DBClusterIdentifier: !Ref KolideRDSCluster
+      DBInstanceClass: db.t2.small
+      DBParameterGroupName: default.aurora-mysql5.7
+      OptionGroupName: "default:aurora-mysql-5-7"
+      DBSubnetGroupName: !Ref RDSSubnetGroup
+  RDSSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Kolide RDS Subnet Group
+      SubnetIds:
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ0
+        - Fn::Sub:
+          - ${Subnet}
+          - Subnet:
+              Fn::ImportValue: Kolide-SubnetAZ1
+Outputs:
+  AuroraDBName:
+    Value: !Ref KolideAuroraDB
+    Export:
+      Name: Kolide-AuroraDBName
+  AuroraEndPoint:
+    Value: !GetAtt KolideAuroraDB.Endpoint.Address
+    Export:
+      Name: Kolide-AuroraEndPoint
+  AuroraClusterEndPoint:
+    Value: !GetAtt KolideRDSCluster.ReadEndpoint.Address
+    Export:
+      Name: Kolide-AuroraClusterEndPoint
